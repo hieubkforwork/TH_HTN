@@ -47,7 +47,6 @@
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-
 /* USER CODE BEGIN PV */
 uint8_t ledY0 = 0;
 uint8_t ledY1 = 0;
@@ -97,10 +96,12 @@ int main(void) {
 	/* Initialize all configured peripherals */
 	/* USER CODE BEGIN 2 */
 	MX_GPIO_Init();
-	MX_SPI1_Init();
+	//MX_SPI1_Init();
 	MX_TIM2_Init();
 	MX_TIM3_Init();
 	MX_TIM4_Init();
+	HAL_TIM_Base_Start_IT(&htim2);
+
 	//systemTimer();
 
 	/* USER CODE END 2 */
@@ -109,7 +110,8 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		/* USER CODE END WHILE */
-
+		//func1();
+		//HAL_Delay(2000);
 		/* USER CODE BEGIN 3 */
 //		catchAndResetFlag();
 
@@ -409,7 +411,7 @@ static void MX_GPIO_Init(void) {
  * @retval  None
  */
 void func1() {
-	HAL_GPIO_TogglePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin);
+	HAL_GPIO_TogglePin (DEBUG_LED_GPIO_Port, DEBUG_LED_Pin);
 }
 //void func2() {
 //	if (!ledY0) {

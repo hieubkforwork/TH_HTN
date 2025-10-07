@@ -42,15 +42,16 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi1;
 
-TIM_HandleTypeDef htim2;
-TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
 uint8_t ledY0 = 0;
 uint8_t ledY1 = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,6 +104,16 @@ int main(void) {
 	MX_TIM4_Init();
 	systemTimer();
 
+	led_7seg_init();
+
+	led_7seg_set_digit(0,0, 1);
+	led_7seg_set_digit(0,1, 1);
+	led_7seg_set_digit(0,2, 1);
+	led_7seg_set_digit(0,3, 1);
+
+	int i=0;
+	uint8_t codon_status = 1;
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -111,7 +122,22 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		catchAndResetFlag();
+		if (timer4_flag == 1) {
+			timer4_flag = 0;
+			led_7seg_display();
+
+
+		}
+		if (timer3_flag == 1) {
+			++i;
+			codon_status= ~codon_status;
+			timer3_flag = 0;
+			led_7seg_set_colon(~codon_status);
+			led_7seg_set_digit(i/1000,0, 1);
+			led_7seg_set_digit((i/100)%10,1, 1);
+			led_7seg_set_digit(((i/10)%100)%10,2, 1);
+			led_7seg_set_digit((i%1000)%10,3, 1);
+		}
 	}
 	/* USER CODE END 3 */
 }
@@ -396,10 +422,10 @@ void systemTimer(void) {
 	timer2_set(2000);
 
 	timer3_init();
-	timer3_set(2000);
+	timer3_set(1000);
 
 	timer4_init();
-	timer4_set(5000);
+	timer4_set(4);
 }
 /**
  * @brief   Function
@@ -444,17 +470,7 @@ void catchAndResetFlag(void) {
 
 		func1();
 	}
-	if (timer3_flag == 1) {
-		timer3_flag = 0;
 
-		func2();
-
-	}
-	if (timer4_flag == 1) {
-		timer4_flag = 0;
-
-		func3();
-	}
 }
 /* USER CODE END 4 */
 

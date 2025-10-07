@@ -1,0 +1,11 @@
+../Core/Src/main.c:75:5:main	8	static
+../Core/Src/main.c:122:6:SystemClock_Config	88	static
+../Core/Src/main.c:172:6:systemTimer	8	static
+../Core/Src/main.c:188:6:func1	8	static
+../Core/Src/main.c:191:6:func2	8	static
+../Core/Src/main.c:202:6:func3	8	static
+../Core/Src/main.c:217:6:gen_clock	8	static
+../Core/Src/main.c:237:6:run_clock	8	static
+../Core/Src/main.c:245:6:display_clock	8	static
+../Core/Src/main.c:258:6:catchAndResetFlag	8	static
+../Core/Src/main.c:282:6:Error_Handler	4	static,ignoring_inline_asm

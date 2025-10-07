@@ -102,6 +102,8 @@ int main(void) {
 	MX_TIM3_Init();
 	MX_TIM4_Init();
 	systemTimer();
+	led_7seg_init();
+
 
 	/* USER CODE END 2 */
 
@@ -393,13 +395,13 @@ static void MX_GPIO_Init(void) {
  */
 void systemTimer(void) {
 	timer2_init();
-	timer2_set(2000);
+	timer2_set(1000);
 
 	timer3_init();
 	timer3_set(2000);
 
 	timer4_init();
-	timer4_set(5000);
+	timer4_set(1000);
 }
 /**
  * @brief   Function
@@ -422,15 +424,10 @@ void func2() {
 	}
 }
 void func3() {
-	if (!ledY1) {
-		HAL_GPIO_WritePin(OUTPUT_Y1_GPIO_Port, OUTPUT_Y1_Pin, GPIO_PIN_SET);
-		ledY1 = 1;
-		timer4_set(5000);
-	} else if (ledY1) {
-		HAL_GPIO_WritePin(OUTPUT_Y1_GPIO_Port, OUTPUT_Y1_Pin, GPIO_PIN_RESET);
-		ledY1 = 0;
-		timer4_set(1000);
-	}
+	led_7seg_set_digit(1, 0, 0);
+	led_7seg_set_digit(2, 1, 0);
+	led_7seg_set_digit(3, 2, 0);
+	led_7seg_set_digit(4, 3, 1);
 }
 /**
  * @brief   Handle timer events and reset flags

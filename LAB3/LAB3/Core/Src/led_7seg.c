@@ -7,11 +7,11 @@
 #include "spi.h"
 
 /* Variables */
-uint8_t led_7seg[4] = { 0, 1, 2, 3 };
-uint8_t led_7seg_map_of_output[10] = { 0x03, 0x9f, 0x25, 0x0d, 0x99, 0x49, 0x41,
+static uint8_t led_7seg[4] = { 0, 1, 2, 3 };
+static uint8_t led_7seg_map_of_output[10] = { 0x03, 0x9f, 0x25, 0x0d, 0x99, 0x49, 0x41,
 		0x1f, 0x01, 0x09 };
-uint16_t led_7seg_index = 0;
-uint16_t spi_buffer = 0xffff;
+static uint16_t led_7seg_index = 0;
+static uint16_t spi_buffer = 0xffff;
 
 /* Functions */
 /**
@@ -26,7 +26,7 @@ void led_7seg_init() {
 /**
  * @brief	Scan led 7 segment
  * @param	None
- * @note	Call in 1ms interrupt
+ * @note	Call in 1ms interrupt (Be called in default in Timer 4 callback function)
  * @retval 	None
  */
 void led_7seg_display() {

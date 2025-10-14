@@ -1,0 +1,11 @@
+../Core/Src/traffic.c:6:6:off_state	24	static
+../Core/Src/traffic.c:11:6:red_state	24	static
+../Core/Src/traffic.c:16:6:yellow_state	24	static
+../Core/Src/traffic.c:21:6:green_state	24	static
+../Core/Src/traffic.c:26:6:test_led_traffic	24	static
+../Core/Src/traffic.c:31:6:led_control	24	static
+../Core/Src/traffic.c:39:6:led_clear	8	static
+../Core/Src/traffic.c:43:6:led_blinking	16	static
+../Core/Src/traffic.c:64:6:show_mode	24	static
+../Core/Src/traffic.c:86:6:show_freq	32	static
+../Core/Src/traffic.c:95:6:show_counter	4	static

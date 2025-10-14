@@ -1,0 +1,6 @@
+../Core/Src/fsm.c:9:6:update_led_counter	4	static
+../Core/Src/fsm.c:15:6:red_duration_process	4	static
+../Core/Src/fsm.c:28:6:yellow_duration_process	4	static
+../Core/Src/fsm.c:37:6:green_duration_process	4	static
+../Core/Src/fsm.c:46:6:auto_run	8	static
+../Core/Src/fsm.c:117:6:fsm_run	24	static

@@ -6,7 +6,7 @@
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2025 STMicroelectronics.
+ * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
  * All rights reserved.</center></h2>
  *
  * This software component is licensed by ST under BSD 3-Clause license,
@@ -19,12 +19,21 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "global.h"
+#include "spi.h"
+#include "tim.h"
+#include "gpio.h"
+#include "fsmc.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "led_7seg.h"
 #include "software_timer.h"
-#include "stdint.h"
+#include "led_7seg.h"
+#include "button.h"
+#include "lcd.h"
+#include "picture.h"
+#include "fsm.h"
+#include "traffic.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,32 +51,31 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
 
-TIM_HandleTypeDef htim2;
-TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim4;
+//extern SPI_HandleTypeDef hspi1;
+//extern TIM_HandleTypeDef htim2;
+//extern TIM_HandleTypeDef htim3;
+//extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
-uint8_t ledY0 = 0;
-uint8_t ledY1 = 0;
+int numberOfPushButton;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_SPI1_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);
-/* USER CODE BEGIN PFP */
 
+/* USER CODE BEGIN PFP */
+void init_system();
+
+int IsButtonUp();
+int IsButtonDown();
+void TestButtonMatrix();
+void TestLcd();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void catchAndResetFlag(void);
-void systemTimer(void);
+
 /* USER CODE END 0 */
 
 /**
@@ -76,6 +84,7 @@ void systemTimer(void);
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
+
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -95,25 +104,55 @@ int main(void) {
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
+
 	/* USER CODE BEGIN 2 */
 	MX_GPIO_Init();
-	MX_SPI1_Init();
 	MX_TIM2_Init();
 	MX_TIM3_Init();
 	MX_TIM4_Init();
-	systemTimer();
-	led_7seg_init();
+	MX_SPI1_Init();
+	MX_FSMC_Init();
 
+	init_system();
+	lcd_clear(WHITE);
+	lcd_fill(55, 45, 105, 175, BLACK);
+	lcd_fill(115, 45, 165, 175, BLACK);
+//	TestLcd();
 
+//	led_7seg_init();
+//
+//	led_7seg_set_digit(1, 0, 0);
+//	led_7seg_set_digit(1, 1, 0);
+//	led_7seg_set_digit(1, 2, 0);
+//	led_7seg_set_digit(1, 3, 0);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+//		led_7seg_display();
+//		if (timer2_flag == 1){
+//			timer2_flag = 0;
+//			test_led_traffic(1);
+////			led_control(LEFT, CLEAR);
+//		}
+//		if (timer3_flag == 1){
+//			timer3_flag = 0;
+//			test_led_traffic(2);
+////			led_control(LEFT, RED_LED);
+//		}
+//		if (timer4_flag == 1) {
+//			timer4_flag = 0;
+//			test_led_traffic(3);
+//		}
+		button_scan();
+		auto_run();
+		fsm_run();
+		show_mode();
+//		 TestButtonMatrix();
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		catchAndResetFlag();
 	}
 	/* USER CODE END 3 */
 }
@@ -130,6 +169,7 @@ void SystemClock_Config(void) {
 	 */
 	__HAL_RCC_PWR_CLK_ENABLE();
 	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
 	/** Initializes the RCC Oscillators according to the specified parameters
 	 * in the RCC_OscInitTypeDef structure.
 	 */
@@ -145,6 +185,7 @@ void SystemClock_Config(void) {
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
 		Error_Handler();
 	}
+
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
 	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
@@ -159,299 +200,57 @@ void SystemClock_Config(void) {
 	}
 }
 
-/**
- * @brief SPI1 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_SPI1_Init(void) {
 
-	/* USER CODE BEGIN SPI1_Init 0 */
-
-	/* USER CODE END SPI1_Init 0 */
-
-	/* USER CODE BEGIN SPI1_Init 1 */
-
-	/* USER CODE END SPI1_Init 1 */
-	/* SPI1 parameter configuration*/
-	hspi1.Instance = SPI1;
-	hspi1.Init.Mode = SPI_MODE_MASTER;
-	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi1.Init.NSS = SPI_NSS_SOFT;
-	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi1.Init.CRCPolynomial = 10;
-	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN SPI1_Init 2 */
-
-	/* USER CODE END SPI1_Init 2 */
-
-}
-
-/**
- * @brief TIM2 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM2_Init(void) {
-
-	/* USER CODE BEGIN TIM2_Init 0 */
-
-	/* USER CODE END TIM2_Init 0 */
-
-	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-
-	/* USER CODE BEGIN TIM2_Init 1 */
-
-	/* USER CODE END TIM2_Init 1 */
-	htim2.Instance = TIM2;
-	htim2.Init.Prescaler = 840 - 1;
-	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim2.Init.Period = 100 - 1;
-	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-	if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
-		Error_Handler();
-	}
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM2_Init 2 */
-
-	/* USER CODE END TIM2_Init 2 */
-
-}
-
-/**
- * @brief TIM3 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM3_Init(void) {
-
-	/* USER CODE BEGIN TIM3_Init 0 */
-
-	/* USER CODE END TIM3_Init 0 */
-
-	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-
-	/* USER CODE BEGIN TIM3_Init 1 */
-
-	/* USER CODE END TIM3_Init 1 */
-	htim3.Instance = TIM3;
-	htim3.Init.Prescaler = 8399;
-	htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim3.Init.Period = 9;
-	htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-	if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
-		Error_Handler();
-	}
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig)
-			!= HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM3_Init 2 */
-
-	/* USER CODE END TIM3_Init 2 */
-
-}
-
-/**
- * @brief TIM4 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM4_Init(void) {
-
-	/* USER CODE BEGIN TIM4_Init 0 */
-
-	/* USER CODE END TIM4_Init 0 */
-
-	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
-	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
-
-	/* USER CODE BEGIN TIM4_Init 1 */
-
-	/* USER CODE END TIM4_Init 1 */
-	htim4.Instance = TIM4;
-	htim4.Init.Prescaler = 8399;
-	htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim4.Init.Period = 9;
-	htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-	if (HAL_TIM_Base_Init(&htim4) != HAL_OK) {
-		Error_Handler();
-	}
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig)
-			!= HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN TIM4_Init 2 */
-
-	/* USER CODE END TIM4_Init 2 */
-
-}
-
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void) {
-	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-	/* GPIO Ports Clock Enable */
-	__HAL_RCC_GPIOE_CLK_ENABLE();
-	__HAL_RCC_GPIOH_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__HAL_RCC_GPIOC_CLK_ENABLE();
-	__HAL_RCC_GPIOG_CLK_ENABLE();
-	__HAL_RCC_GPIOD_CLK_ENABLE();
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOE, DEBUG_LED_Pin | OUTPUT_Y0_Pin | OUTPUT_Y1_Pin,
-			GPIO_PIN_RESET);
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LD_LATCH_GPIO_Port, LD_LATCH_Pin, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(BTN_LOAD_GPIO_Port, BTN_LOAD_Pin, GPIO_PIN_RESET);
-
-	/*Configure GPIO pins : DEBUG_LED_Pin OUTPUT_Y0_Pin OUTPUT_Y1_Pin */
-	GPIO_InitStruct.Pin = DEBUG_LED_Pin | OUTPUT_Y0_Pin | OUTPUT_Y1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-	/*Configure GPIO pins : INPUT_X0_Pin INPUT_X1_Pin */
-	GPIO_InitStruct.Pin = INPUT_X0_Pin | INPUT_X1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-	/*Configure GPIO pins : INPUT_X2_Pin INPUT_X3_Pin */
-	GPIO_InitStruct.Pin = INPUT_X2_Pin | INPUT_X3_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-	/*Configure GPIO pin : LD_LATCH_Pin */
-	GPIO_InitStruct.Pin = LD_LATCH_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(LD_LATCH_GPIO_Port, &GPIO_InitStruct);
-
-	/*Configure GPIO pin : BTN_LOAD_Pin */
-	GPIO_InitStruct.Pin = BTN_LOAD_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(BTN_LOAD_GPIO_Port, &GPIO_InitStruct);
-
-}
 
 /* USER CODE BEGIN 4 */
+void init_system() {
+	button_init();
+	led_7seg_init();
+	lcd_init();
 
-/**
- * @brief   Initialize all software timers
- * @note    TIM2 toggles DEBUG_LED every 1s
- *          TIM3 toggles OUTPUT_Y0 every 2s
- *          TIM4 toggles OUTPUT_Y1 every 4s
- * @param 	None
- * @retval  None
- */
-void systemTimer(void) {
 	timer2_init();
-	timer2_set(1000);
+	timer2_set(6000);
 
 	timer3_init();
 	timer3_set(2000);
 
 	timer4_init();
-	timer4_set(1000);
+	timer4_set(50);
 }
-/**
- * @brief   Function
- * @note    None
- * @param 	None
- * @retval  None
- */
-void func1() {
-	HAL_GPIO_TogglePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin);
+
+// Button example 1: a button is pressed 1 time (50ms).
+int IsButtonDown() {
+	if (button_count[0] == 1) {
+		return 1;
+	}
+	return 0;
 }
-void func2() {
-	if (!ledY0) {
-		HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin, GPIO_PIN_SET);
-		ledY0 = 1;
-		timer3_set(2000);
-	} else if (ledY0) {
-		HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin,GPIO_PIN_RESET);
-		ledY0 = 0;
-		timer3_set(4000);
+
+// Button example 2:
+// Check if a button is pressed 1 time (50ms),
+// or if it is held down for more than 1 second, in which case it returns 1 every 100ms.
+int IsButtonUp() {
+	if (button_count[1] == 1 || (button_count[1] > 20 && button_count[1] % 2 == 0)) {
+		return 1;
+	}
+	return 0;
+}
+
+void TestButtonMatrix() {
+	for (int i = 0; i < 16; i++) {
+		if (button_count[i] != 0) {
+			lcd_show_int_num(140, 105, i, 2, BRED, WHITE, 32);
+		}
 	}
 }
-void func3() {
-	led_7seg_set_digit(1, 0, 0);
-	led_7seg_set_digit(2, 1, 0);
-	led_7seg_set_digit(3, 2, 0);
-	led_7seg_set_digit(4, 3, 1);
-}
-/**
- * @brief   Handle timer events and reset flags
- * @note    Called periodically in main loop to handle timer events
- * @param 	None
- * @retval  None
- */
-void catchAndResetFlag(void) {
-	if (timer2_flag == 1) {
-		timer2_flag = 0;
 
-		func1();
-	}
-	if (timer3_flag == 1) {
-		timer3_flag = 0;
-
-		func2();
-
-	}
-	if (timer4_flag == 1) {
-		timer4_flag = 0;
-
-		func3();
-	}
+void TestLcd() {
+	lcd_fill(0, 0, 240, 20, BLUE);
+	lcd_show_string_center(0, 2, "Hello World !!!", RED, BLUE, 16, 1);
+	lcd_show_string(20, 30, "Test LCD Screen", WHITE, RED, 24, 0);
+	lcd_draw_rectangle(20, 80, 100, 160, GREEN);
+	lcd_draw_circle(160, 120, BRED, 40, 0);
+	lcd_show_picture(80, 200, 90, 90, gImageLogo);
 }
 /* USER CODE END 4 */
 
@@ -484,5 +283,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

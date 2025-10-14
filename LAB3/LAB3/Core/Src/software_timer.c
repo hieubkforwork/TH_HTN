@@ -6,7 +6,6 @@
 #include "software_timer.h"
 #include "tim.h"
 
-#include "led_7seg.h"
 
 /* Variables */
 uint8_t timer2_flag = 0;
@@ -21,14 +20,12 @@ uint8_t timer4_flag = 0;
 uint16_t timer4_counter = 0;
 uint16_t timer4_mul = 0;
 
+
 /**
  * @brief  	Init timer interrupt
  * @param  	None
  * @retval 	None
  */
-
-
-
 void timer2_init(void) {
 	HAL_TIM_Base_Start_IT(&htim2);
 }
@@ -40,6 +37,8 @@ void timer3_init(void) {
 void timer4_init(void) {
 	HAL_TIM_Base_Start_IT(&htim4);
 }
+
+
 
 /**
  * @brief	Set duration of software timer interrupt
@@ -71,6 +70,7 @@ void timer4_set(int ms) {
  * @retval 	None
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+//	test_led_traffic(2);
 	if (htim->Instance == TIM2) {
 		if (timer2_counter > 0) {
 			timer2_counter--;
@@ -79,6 +79,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				timer2_counter = timer2_mul;
 			}
 		}
+//		test_led_traffic(1);
 	}
 
 	if (htim->Instance == TIM3) {
@@ -89,6 +90,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				timer3_counter = timer3_mul;
 			}
 		}
+//		test_led_traffic(2);
 	}
 
 	if (htim->Instance == TIM4) {
@@ -98,9 +100,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				timer4_flag = 1;
 				timer4_counter = timer4_mul;
 			}
-			led_7seg_display();
 		}
-
+//		test_led_traffic(3);
 	}
 }
 

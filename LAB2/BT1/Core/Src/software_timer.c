@@ -97,8 +97,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			if (timer4_counter == 0) {
 				timer4_flag = 1;
 				timer4_counter = timer4_mul;
+				led_7seg_display();
+
 			}
-			led_7seg_display();
 		}
 
 	}

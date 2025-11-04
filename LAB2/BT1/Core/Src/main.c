@@ -81,7 +81,7 @@ int main(void) {
 	/* MCU Configuration--------------------------------------------------------*/
 
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  	HAL_Init();
 
 	/* USER CODE BEGIN Init */
 
@@ -104,6 +104,10 @@ int main(void) {
 	systemTimer();
 	led_7seg_init();
 
+	led_7seg_set_digit(5, 0, 0);
+	led_7seg_set_digit(6, 1, 0);
+	led_7seg_set_digit(7, 2, 0);
+	led_7seg_set_digit(8, 3, 0);
 
 	/* USER CODE END 2 */
 
@@ -401,7 +405,7 @@ void systemTimer(void) {
 	timer3_set(2000);
 
 	timer4_init();
-	timer4_set(1000);
+	timer4_set(1);
 }
 /**
  * @brief   Function
@@ -418,16 +422,13 @@ void func2() {
 		ledY0 = 1;
 		timer3_set(2000);
 	} else if (ledY0) {
-		HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin, GPIO_PIN_RESET);
 		ledY0 = 0;
 		timer3_set(4000);
 	}
 }
 void func3() {
-	led_7seg_set_digit(1, 0, 0);
-	led_7seg_set_digit(2, 1, 0);
-	led_7seg_set_digit(3, 2, 0);
-	led_7seg_set_digit(4, 3, 1);
+
 }
 /**
  * @brief   Handle timer events and reset flags

@@ -42,10 +42,11 @@
 /* USER CODE BEGIN PD */
 
 // State of Car Indicator
-#define INIT 				0
-#define OFF        1
-#define LEFT       2
-#define RIGHT        3
+#define INIT 		0
+#define OFF         1
+#define LEFT        2
+#define RIGHT       3
+#define BACK		4
 
 /* USER CODE END PD */
 
@@ -199,75 +200,57 @@ void RightIndicatorOff(){
 	lcd_draw_circle(194, 196, GRAY, 14, 1);
 }
 
-void AppIndicator()
-{
-    cntOfIndicator = (cntOfIndicator + 1)%20;
-    if (cntOfIndicator == 0){
-    	//every 1s
-    	if(flag_blink == 0){
-    		flag_blink = 1;
-    	} else {
-    		flag_blink = 0;
-    	}
+void AppIndicator() {
+    cntOfIndicator = (cntOfIndicator + 1)%10;
+    if (cntOfIndicator == 0){ //every 0.5s
+    	if(flag_blink == 0) flag_blink = 1;
+    	else flag_blink = 0;
     }
 
-    switch (statusOfIndicator)
-    {
+    switch (statusOfIndicator) {
 		case INIT:
 			lcd_clear(WHITE);
 			lcd_fill(0, 0, 240, 20, BLUE);
 			lcd_show_string_center(0, 0, "Car Indicator", WHITE, BLUE, 16, 0);
 			lcd_fill(0, 300, 240, 320, BLUE);
 			lcd_show_picture(0, 30, 240, 237, gImage_background);
-
-//			timeOfLight = timeOfGreenPhase1;
 			statusOfIndicator = OFF;
 			break;
 		case OFF:
 			lcd_show_string_center(0, 302, " OFF ", WHITE, BLUE, 16, 0);
-
 			LeftIndicatorOff();
 			RightIndicatorOff();
-
-			if(button_count[11] == 1){
-				statusOfIndicator = RIGHT;
-			}
-
-			if(button_count[15] == 1){
-				statusOfIndicator = LEFT;
-			}
+			if(button_count[7]  == 1) statusOfIndicator = BACK;
+			if(button_count[11] == 1) statusOfIndicator = RIGHT;
+			if(button_count[15] == 1) statusOfIndicator = LEFT;
 			break;
 		case RIGHT:
 			lcd_show_string_center(0, 302, "RIGHT", WHITE, BLUE, 16, 0);
-
 			LeftIndicatorOff();
-
-			if(flag_blink == 1){
-				RightIndicatorOn();
-			} else {
-				RightIndicatorOff();
-			}
-
-			if(button_count[15] == 1){
-				statusOfIndicator = OFF;
-			}
+			if(flag_blink == 1) RightIndicatorOn();
+			else RightIndicatorOff();
+			if(button_count[3] == 1) statusOfIndicator = OFF;
 			break;
 		case LEFT:
 			lcd_show_string_center(0, 302, "LEFT ", WHITE, BLUE, 16, 0);
-
-			if(flag_blink == 1){
-				LeftIndicatorOn();
-			} else {
-				LeftIndicatorOff();
-			}
-
-
+			if(flag_blink == 1) LeftIndicatorOn();
+			else LeftIndicatorOff();
 			RightIndicatorOff();
-
-			if(button_count[11] == 1){
-				statusOfIndicator = OFF;
-			}
+			if(button_count[3] == 1) statusOfIndicator = OFF;
 			break;
+		case BACK:
+			lcd_show_string_center(0, 302, "BACK ", WHITE, BLUE, 16, 0);
+			if(flag_blink == 1) {
+				LeftIndicatorOn();
+				RightIndicatorOn();
+			}
+			else {
+				LeftIndicatorOff();
+				RightIndicatorOff();
+			}
+			if(button_count[3] == 1) statusOfIndicator = OFF;
+			break;
+
         default:
             statusOfIndicator = INIT;
             break;

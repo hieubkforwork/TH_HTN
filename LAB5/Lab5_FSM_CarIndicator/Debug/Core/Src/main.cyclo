@@ -1,0 +1,9 @@
+../Core/Src/main.c:84:5:main	2
+../Core/Src/main.c:134:6:SystemClock_Config	3
+../Core/Src/main.c:173:6:system_init	1
+../Core/Src/main.c:190:6:LeftIndicatorOn	1
+../Core/Src/main.c:193:6:LeftIndicatorOff	1
+../Core/Src/main.c:196:6:RightIndicatorOn	1
+../Core/Src/main.c:199:6:RightIndicatorOff	1
+../Core/Src/main.c:203:6:AppIndicator	17
+../Core/Src/main.c:265:6:Error_Handler	1

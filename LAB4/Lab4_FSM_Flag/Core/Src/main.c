@@ -45,6 +45,7 @@
 #define	STOP_MOVING     3
 #define	TOP_POSITION    4
 #define	BOTTOM_POSITION 5
+#define	FLYING		    6
 
 #define TOP_POSITION_OF_FLAG 	100
 #define BOTTOM_POSITION_OF_FLAG 200
@@ -60,6 +61,7 @@
 /* USER CODE BEGIN PV */
 uint8_t statusFlag = INIT_SYSTEM;
 uint16_t flag_position = BOTTOM_POSITION_OF_FLAG;
+uint16_t flag_fly = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,8 +123,7 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		while (timer2_flag == 0)
-			;
+		while (timer2_flag == 0);
 		timer2_flag = 0;
 
 		// INPUT
@@ -198,54 +199,72 @@ void init_system() {
 }
 
 uint8_t IsButtonUp() {
-	if (button_count[3] == 1)
-		return 1;
-	else
-		return 0;
+	if (button_count[3] == 1) return 1;
+	else return 0;
 }
 
 uint8_t IsButtonDown() {
-	if (button_count[7] == 1)
-		return 1;
-	else
-		return 0;
+	if (button_count[7] == 1) return 1;
+	else return 0;
 }
 
 uint8_t IsButtonStop() {
-	if (button_count[11] == 1)
-		return 1;
-	else
-		return 0;
+	if (button_count[11] == 1) return 1;
+	else return 0;
+}
+
+uint8_t IsButtonFly() {
+	if (button_count[15] == 1) return 1;
+	else return 0;
 }
 
 uint8_t IsBottomSwitch() {
-	if (flag_position == BOTTOM_POSITION_OF_FLAG)
-		return 1;
-	else
-		return 0;
+	if (flag_position == BOTTOM_POSITION_OF_FLAG) return 1;
+	else return 0;
 }
 
 uint8_t IsTopSwitch() {
-	if (flag_position == TOP_POSITION_OF_FLAG)
-		return 1;
-	else
-		return 0;
+	if (flag_position == TOP_POSITION_OF_FLAG) return 1;
+	else return 0;
 }
 
 void FlagMovingDown() {
-	lcd_draw_line(132, flag_position - 1, 222, flag_position - 1, 0x875c);
-	lcd_show_picture(132, flag_position, 90, 58, gImage_l_flag);
+	lcd_draw_line(122, flag_position - 1, 222, flag_position - 1, 0x875c);
+	lcd_show_picture(122, flag_position, 90, 58, gImage_l_flag);
 	flag_position++;
 }
 
 void FlagMovingUp() {
-	lcd_draw_line(132, flag_position + 58, 222, flag_position + 58, 0x875c);
-	lcd_show_picture(132, flag_position, 90, 58, gImage_l_flag);
+	lcd_draw_line(122, flag_position + 58, 222, flag_position + 58, 0x875c);
+	lcd_show_picture(122, flag_position, 90, 58, gImage_l_flag);
 	flag_position--;
 }
 
 void FlagStopMoving() {
-	lcd_show_picture(132, flag_position, 90, 58, gImage_l_flag);
+	lcd_show_picture(122, flag_position, 90, 58, gImage_l_flag);
+}
+
+void FlagRight() {
+	lcd_show_picture(122, flag_position, 90, 58, gImage_l_flag);
+	lcd_fill(20, flag_position, 105, flag_position + 58, 0x875c);
+}
+
+void FlagLeft() {
+	lcd_show_picture(20, flag_position, 90, 58, gImage_l_flag);
+	lcd_fill(105, flag_position + 7, 110, flag_position + 58, BLACK);
+	lcd_fill(122, flag_position, 212, flag_position + 58, 0x875c);
+}
+
+void FlagFlying() {
+	if (flag_fly >= 0 && flag_fly < 5) {
+		FlagRight();
+		flag_fly++;
+	}
+	else if (flag_fly >= 5 && flag_fly < 9) {
+		FlagLeft();
+		flag_fly++;
+	}
+	else if (flag_fly == 9) flag_fly = 0;
 }
 
 void BaiTapFlag() {
@@ -253,70 +272,52 @@ void BaiTapFlag() {
 	case INIT_SYSTEM:
 		lcd_clear(0x875c);
 		lcd_fill(0, 0, 240, 20, BLUE);
-		lcd_show_picture(80, 100, 90, 209, gImage_c_flag);
-
+		lcd_show_picture(70, 100, 90, 209, gImage_c_flag);
 		statusFlag = BOTTOM_POSITION;
 		break;
 
 	case MOVING_UP:
 		lcd_show_string_center(0, 2, "   MOVING UP   ", WHITE, BLUE, 16, 0);
 		FlagMovingUp();
-
-		if (IsButtonDown()) {
-			statusFlag = MOVING_DOWN;
-		}
-
-		if (IsTopSwitch()) {
-			statusFlag = TOP_POSITION;
-		}
-
-		if (IsButtonStop()) {
-			statusFlag = STOP_MOVING;
-		}
+		if (IsButtonDown()) statusFlag = MOVING_DOWN;
+		if (IsTopSwitch()) statusFlag = TOP_POSITION;
+		if (IsButtonStop()) statusFlag = STOP_MOVING;
 		break;
 
 	case BOTTOM_POSITION:
 		lcd_show_string_center(0, 2, "BOTTOM POSITION", WHITE, BLUE, 16, 0);
 		FlagStopMoving();
-
-		if (IsButtonUp()) {
-			statusFlag = MOVING_UP;
-		}
+		if (IsButtonUp()) statusFlag = MOVING_UP;
 		break;
 
 	case MOVING_DOWN:
 		lcd_show_string_center(0, 2, "  MOVING DOWN  ", WHITE, BLUE, 16, 0);
 		FlagMovingDown();
-
-		if (IsBottomSwitch()) {
-			statusFlag = BOTTOM_POSITION;
-		}
-
-		if (IsButtonStop()) {
-			statusFlag = STOP_MOVING;
-		}
+		if (IsButtonUp()) statusFlag = MOVING_UP;
+		if (IsBottomSwitch()) statusFlag = BOTTOM_POSITION;
+		if (IsButtonStop()) statusFlag = STOP_MOVING;
 		break;
 
 	case TOP_POSITION:
-		lcd_show_string_center(0, 2, "  TOP POSTION  ", WHITE,
-		BLUE, 16, 0);
+		lcd_show_string_center(0, 2, "  TOP POSTION  ", WHITE, BLUE, 16, 0);
 		FlagStopMoving();
-
-		if (IsButtonDown()) {
-			statusFlag = MOVING_DOWN;
-		}
+		if (IsButtonFly()) statusFlag = FLYING;
+		if (IsButtonDown()) statusFlag = MOVING_DOWN;
 		break;
 
 	case STOP_MOVING:
 		lcd_show_string_center(0, 2, "  STOP MOVING  ", WHITE, BLUE, 16, 0);
 		FlagStopMoving();
+		if (IsButtonUp()) statusFlag = MOVING_UP;
+		if (IsButtonDown()) statusFlag = MOVING_DOWN;
+		break;
 
-		if (IsButtonUp()) {
-			statusFlag = MOVING_UP;
-		}
-
-		if (IsButtonDown()) {
-			statusFlag = MOVING_DOWN;
+	case FLYING:
+		lcd_show_string_center(0, 2, "    FLYING    ", WHITE, BLUE, 16, 0);
+		FlagFlying();
+		if (IsButtonStop()) {
+			statusFlag = TOP_POSITION;
+			lcd_fill(20, flag_position, 105, flag_position + 58, 0x875c);
 		}
 		break;
 

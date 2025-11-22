@@ -3119,7 +3119,7 @@ void AppIndicator() {
  80016c4:	1aca      	subs	r2, r1, r3
  80016c6:	4b76      	ldr	r3, [pc, #472]	; (80018a0 <AppIndicator+0x1fc>)
  80016c8:	601a      	str	r2, [r3, #0]
-    if (cntOfIndicator == 0){ //every 1s
+    if (cntOfIndicator == 0){ //every 0.5s
  80016ca:	4b75      	ldr	r3, [pc, #468]	; (80018a0 <AppIndicator+0x1fc>)
  80016cc:	681b      	ldr	r3, [r3, #0]
  80016ce:	2b00      	cmp	r3, #0

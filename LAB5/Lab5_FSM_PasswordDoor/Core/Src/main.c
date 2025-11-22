@@ -45,6 +45,7 @@
 #define UNLOCK_DOOR		3
 #define WRONG_PASSWORD	4
 #define CHECK_PASSWORD	5
+#define LOCK_LONG		6
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,6 +66,7 @@ uint16_t indexOfNumber = 0;
 uint16_t numberValue;
 uint16_t timeDelay = 0;
 uint8_t flagOpen = 0;
+uint8_t wrongTimes = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -217,25 +219,16 @@ uint16_t CheckPassword() {
 	for (i = 0; i < 5; i++) {
 		result = 1;
 		for (j = 0; j < 4; j++) {
-			if (arrayPassword[j] != arrayMapOfPassword[i][j])
-				result = 0;
+			if (arrayPassword[j] != arrayMapOfPassword[i][j]) result = 0;
 		}
-		if (result == 1)
-			return i + 1;
+		if (result == 1) return i + 1;
 	}
 
 	return result;
 }
 
 void UnlockDoor() {
-	if (flagOpen == 0) {
-		lcd_show_picture(80, 90, 77, 130, image_door_open_1);
-		lcd_show_picture(80, 90, 77, 130, image_door_open_2);
-		lcd_show_picture(80, 90, 80, 135, image_door_open_3);
-		lcd_show_picture(80, 90, 90, 138, image_door_open_4);
-		lcd_show_picture(80, 90, 98, 138, image_door_open_5);
-		flagOpen = 1;
-	}
+	if (flagOpen == 0) flagOpen = 1;
 	lcd_show_picture(80, 90, 112, 138, image_door_open_6);
 }
 
@@ -244,10 +237,8 @@ void LockDoor() {
 }
 
 uint8_t IsButtonEnter() {
-	if (button_count[12] == 1)
-		return 1;
-	else
-		return 0;
+	if (button_count[12] == 1) return 1;
+	else return 0;
 }
 
 void AppPasswordDoor() {
@@ -255,13 +246,12 @@ void AppPasswordDoor() {
 	case INIT_SYSTEM:
 		lcd_show_picture(0, 0, 240, 320, image_background);
 		statusPassword = LOCK_DOOR;
-
 		break;
 
 	case LOCK_DOOR:
 		lcd_show_picture(25, 40, 180, 49, image_press_enter_text);
 		lcd_show_picture(107, 265, 30, 32, image_protect_icon);
-		lcd_show_string_center(0, 15, "     LOCK       ", RED, WHITE, 16, 0);
+		lcd_show_string_center(0, 15, "         LOCK          ", RED, WHITE, 16, 0);
 		LockDoor();
 
 		if (IsButtonEnter()) {
@@ -277,62 +267,82 @@ void AppPasswordDoor() {
 		}
 		break;
 
+	case LOCK_LONG:
+		timeDelay++;
+		lcd_show_picture(107, 265, 30, 32, image_protect_icon);
+		lcd_show_string_center(0, 15, "      BLOCKED       ", RED, WHITE, 16, 0);
+		lcd_show_string(60, 40, "Retry after: ", BLUE, WHITE, 16, 1);
+		lcd_show_int_num(160, 40, (30 - timeDelay/10)/2, 2, BRED, WHITE, 16);
+
+		LockDoor();
+
+		if (timeDelay >= 300) { //15s
+			statusPassword = LOCK_DOOR;
+			lcd_fill(30, 25, 210, 80, WHITE);
+		}
+		break;
+
 	case ENTER_PASSWORD:
 		lcd_show_string_center(0, 12, "   ENTER PASS   ", RED, WHITE, 16, 0);
 		timeDelay++;
 		if (IsButtonNumber()) {
-			lcd_show_string(70 + indexOfNumber * 30, 242, "*", BLACK, LIGHTGRAY,
-					16, 0);
+			lcd_fill(30, 265, 210, 300, WHITE);
+			lcd_show_string(70 + indexOfNumber * 30, 242, "*", BLACK, LIGHTGRAY, 16, 0);
 			arrayPassword[indexOfNumber] = numberValue;
 			indexOfNumber++;
 			timeDelay = 0;
 		}
-
-		if (indexOfNumber >= 4) {
-			statusPassword = CHECK_PASSWORD;
+		if (indexOfNumber >= 4) statusPassword = CHECK_PASSWORD;
+		if (timeDelay >= 40) { //2s
+			lcd_show_string(85, 270, "Remain: ", BLUE, WHITE, 16, 1);
+			lcd_show_int_num(145, 270, (14 - timeDelay/10)/2, 1, BRED, WHITE, 16);
 		}
-
-		if (timeDelay >= 100) {
+		if (timeDelay >= 140) {
 			statusPassword = LOCK_DOOR;
 			lcd_fill(20, 20, 220, 300, WHITE);
 		}
 		break;
 
 	case CHECK_PASSWORD:
-
 		timeDelay = 0;
 		if (CheckPassword()) {
-			lcd_fill(30, 40, 210, 80, WHITE);		//clear text
+			lcd_fill(30, 40, 210, 100, WHITE);		//clear text
 			lcd_fill(30, 265, 210, 300, WHITE);		//clear protect
 			statusPassword = UNLOCK_DOOR;
 			timeDelay = 0;
-		} else {
-			statusPassword = WRONG_PASSWORD;
-		}
+		} else statusPassword = WRONG_PASSWORD;
 
 		break;
 
 	case UNLOCK_DOOR:
-		lcd_show_string_center(0, 12, "    UNLOCK     ", RED, WHITE, 16, 0);
+		lcd_show_string_center(0, 12, "     UNLOCK     ", RED, WHITE, 16, 0);
 		timeDelay++;
 		UnlockDoor();
 		if (timeDelay >= 100) {
 			statusPassword = LOCK_DOOR;
 			lcd_fill(20, 20, 220, 300, WHITE);
 		}
+		lcd_show_string(70, 72, "Lock after: ", BLUE, WHITE, 16, 1);
+		lcd_show_int_num(155, 72, (10 - timeDelay/10)/2, 2, BRED, WHITE, 16);
 		break;
 
 	case WRONG_PASSWORD:
 		timeDelay++;
+		wrongTimes++;
 		lcd_show_picture(17, 40, 206, 53, image_wrong_pass_text);
 		lcd_show_picture(17, 235, 206, 30, image_pass_enter);
 		lcd_show_picture(17, 265, 206, 28, image_wrong_icon);
 
 		statusPassword = ENTER_PASSWORD;
 		indexOfNumber = 0;
+		if (timeDelay >= 100) statusPassword = LOCK_DOOR;
+		if (wrongTimes >= 3) { // wrong 3 times
+			statusPassword = LOCK_LONG;
+			wrongTimes = 0;
+			timeDelay = 0;
+			lcd_fill(30, 25, 210, 100, WHITE);
+			lcd_fill(30, 265, 210, 300, WHITE);
 
-		if (timeDelay >= 100) {
-			statusPassword = LOCK_DOOR;
 		}
 		break;
 

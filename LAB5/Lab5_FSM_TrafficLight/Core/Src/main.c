@@ -61,6 +61,10 @@
 #define PHASE1_YELLOW       2
 #define PHASE2_GREEN        3
 #define PHASE2_YELLOW       4
+#define MODIFY_YELLOW1      5
+#define MODIFY_GREEN1       6
+#define MODIFY_YELLOW2      7
+#define MODIFY_GREEN2       8
 
 
 /* USER CODE END PD */
@@ -71,13 +75,15 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-int timeOfGreenPhase1 = 25;
+int timeOfGreenPhase1 =  7;
 int timeOfYellowPhase1 = 3;
-int timeOfGreenPhase2 = 20;
+int timeOfGreenPhase2 =  5;
 int timeOfYellowPhase2 = 3;
 int timeOfLight = 0;
-int cntOfLight = 0;
+int cntOfLight =  0;
 int statusOfLight = INIT;
+int countLight = 0;
+int swap = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -244,16 +250,49 @@ void phase2Yellow() {
 	lcd_draw_circle(CX_YELLOW1, CY_YELLOW1, 0x6351, RADIUS, 1);
 }
 
-void AppTrafficLight()
-{
-    cntOfLight = (cntOfLight + 1)%20;
-    if (cntOfLight == 0){
-    	//every 1s
-    	timeOfLight --;
-    }
+void lightRed() {
+	lcd_draw_circle(CX_GREEN2, CY_GREEN2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED2, CY_RED2, RED, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW2, CY_YELLOW2, 0x6351, RADIUS, 1);
 
-    switch (statusOfLight)
-    {
+	lcd_draw_circle(CX_GREEN1, CY_GREEN1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED1, CY_RED1, RED, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW1, CY_YELLOW1, 0x6351, RADIUS, 1);
+}
+void lightGreen() {
+	lcd_draw_circle(CX_GREEN2, CY_GREEN2, GREEN, RADIUS, 1);
+	lcd_draw_circle(CX_RED2, CY_RED2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW2, CY_YELLOW2, 0x6351, RADIUS, 1);
+
+	lcd_draw_circle(CX_GREEN1, CY_GREEN1, GREEN, RADIUS, 1);
+	lcd_draw_circle(CX_RED1, CY_RED1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW1, CY_YELLOW1, 0x6351, RADIUS, 1);
+}
+void lightYellow() {
+	lcd_draw_circle(CX_GREEN2, CY_GREEN2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED2, CY_RED2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW2, CY_YELLOW2, YELLOW, RADIUS, 1);
+
+	lcd_draw_circle(CX_GREEN1, CY_GREEN1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED1, CY_RED1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW1, CY_YELLOW1, YELLOW, RADIUS, 1);
+}
+
+void lightOff(){
+	lcd_draw_circle(CX_GREEN2, CY_GREEN2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED2, CY_RED2, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW2, CY_YELLOW2, 0x6351, RADIUS, 1);
+
+	lcd_draw_circle(CX_GREEN1, CY_GREEN1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_RED1, CY_RED1, 0x6351, RADIUS, 1);
+	lcd_draw_circle(CX_YELLOW1, CY_YELLOW1, 0x6351, RADIUS, 1);
+}
+
+void AppTrafficLight() {
+    cntOfLight = (cntOfLight + 1)%20;
+    if (cntOfLight == 0) timeOfLight --; //every 1s
+
+    switch (statusOfLight) {
 		case INIT:
 			lcd_clear(BLACK);
 			lcd_fill(0, 0, 240, 20, BLUE);
@@ -273,16 +312,18 @@ void AppTrafficLight()
     		lcd_show_int_num(75, 50, timeOfLight / 10, 1, RED, 0x47e8, 32);
     		lcd_show_int_num(90, 50, timeOfLight % 10, 1, RED, 0x47e8, 32);
     		//print counter phase2
-    		lcd_show_int_num(15, 140, (timeOfLight + timeOfYellowPhase1) / 10, 1, RED,
-    				0x47e8, 32);
-    		lcd_show_int_num(30, 140, (timeOfLight + timeOfYellowPhase1) % 10, 1, RED,
-    				0x47e8, 32);
+    		lcd_show_int_num(15, 140, (timeOfLight + timeOfYellowPhase1) / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, (timeOfLight + timeOfYellowPhase1) % 10, 1, RED, 0x47e8, 32);
 
-            if (timeOfLight == 0)
-            {
-            	//timeout
+            if (timeOfLight == 0){ //timeout
                 statusOfLight = PHASE1_YELLOW;
                 timeOfLight = timeOfYellowPhase1;
+            }
+            if (button_count[12] == 1) {
+            	countLight = timeOfGreenPhase1; // modify green-1
+            	lcd_show_picture(0, 20, 240, 280, gImage_traffic); // clear
+            	statusOfLight = MODIFY_GREEN1;
+            	lightGreen();
             }
             break;
         case PHASE1_YELLOW:
@@ -294,17 +335,20 @@ void AppTrafficLight()
     		lcd_show_int_num(75, 50, timeOfLight / 10, 1, RED, 0x47e8, 32);
     		lcd_show_int_num(90, 50, timeOfLight % 10, 1, RED, 0x47e8, 32);
     		//print counter phase1
-    		lcd_show_int_num(15, 140, timeOfLight / 10, 1, RED,
-    				0x47e8, 32);
-    		lcd_show_int_num(30, 140, timeOfLight % 10, 1, RED,
-    				0x47e8, 32);
+    		lcd_show_int_num(15, 140, timeOfLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, timeOfLight % 10, 1, RED, 0x47e8, 32);
 
-            if (timeOfLight == 0)
-            {
-            	//timeout
+            if (timeOfLight == 0){ //timeout
                 statusOfLight = PHASE2_GREEN;
                 timeOfLight = timeOfGreenPhase2;
-            }            break;
+            }
+            if (button_count[12] == 1) {
+            	countLight = timeOfYellowPhase1; // modify yellow-1
+            	lcd_show_picture(0, 20, 240, 280, gImage_traffic); // clear
+            	statusOfLight = MODIFY_YELLOW1;
+            	lightYellow();
+            }
+            break;
         case PHASE2_GREEN:
         	//set light
         	phase2Green();
@@ -314,16 +358,18 @@ void AppTrafficLight()
     		lcd_show_int_num(75, 50, (timeOfLight + timeOfYellowPhase2) / 10, 1, RED, 0x47e8, 32);
     		lcd_show_int_num(90, 50, (timeOfLight + timeOfYellowPhase2) % 10, 1, RED, 0x47e8, 32);
     		//print counter phase2
-    		lcd_show_int_num(15, 140, timeOfLight / 10, 1, RED,
-    				0x47e8, 32);
-    		lcd_show_int_num(30, 140, timeOfLight % 10, 1, RED,
-    				0x47e8, 32);
+    		lcd_show_int_num(15, 140, timeOfLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, timeOfLight % 10, 1, RED, 0x47e8, 32);
 
-            if (timeOfLight == 0)
-            {
-            	//timeout
+            if (timeOfLight == 0) { //timeout
                 statusOfLight = PHASE2_YELLOW;
                 timeOfLight = timeOfYellowPhase2;
+            }
+            if (button_count[12] == 1) {
+            	countLight = timeOfGreenPhase2; // modify green-2
+            	lcd_show_picture(0, 20, 240, 280, gImage_traffic); // clear
+            	statusOfLight = MODIFY_GREEN2;
+            	lightGreen();
             }
             break;
         case PHASE2_YELLOW:
@@ -335,18 +381,98 @@ void AppTrafficLight()
     		lcd_show_int_num(75, 50, timeOfLight / 10, 1, RED, 0x47e8, 32);
     		lcd_show_int_num(90, 50, timeOfLight % 10, 1, RED, 0x47e8, 32);
     		//print counter phase2
-    		lcd_show_int_num(15, 140, (timeOfLight) / 10, 1, RED,
-    				0x47e8, 32);
-    		lcd_show_int_num(30, 140, (timeOfLight) % 10, 1, RED,
-    				0x47e8, 32);
+    		lcd_show_int_num(15, 140, timeOfLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, timeOfLight % 10, 1, RED, 0x47e8, 32);
 
-            if (timeOfLight == 0)
-            {
-            	//timeout
+            if (timeOfLight == 0) { //timeout
                 statusOfLight = PHASE1_GREEN;
                 timeOfLight = timeOfGreenPhase1;
             }
+            if (button_count[12] == 1) {
+            	countLight = timeOfYellowPhase2; // modify yellow-2
+            	lcd_show_picture(0, 20, 240, 280, gImage_traffic); // clear
+            	statusOfLight = MODIFY_YELLOW2;
+            	lightYellow();
+            }
             break;
+
+        case MODIFY_YELLOW1:
+        	if (cntOfLight == 0) {
+        		swap = (swap + 1) % 2;
+            	if (swap == 0) lightYellow();
+            	else lightOff();
+        	}
+    		lcd_show_int_num(15, 140, countLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, countLight % 10, 1, RED, 0x47e8, 32);
+        	if (button_count[12] == 1) {
+                statusOfLight = PHASE1_YELLOW;
+                timeOfYellowPhase1 = countLight;
+                timeOfLight = timeOfYellowPhase1;
+                countLight = 0;
+                swap = 0;
+        	}
+        	if (button_count[13] == 1) {
+        		countLight = (countLight + 1)%20;
+        	}
+        	break;
+        case MODIFY_GREEN1:
+        	if (cntOfLight == 0) {
+        		swap = (swap + 1) % 2;
+            	if (swap == 0) lightGreen();
+            	else lightOff();
+        	}
+    		lcd_show_int_num(15, 140, countLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(30, 140, countLight % 10, 1, RED, 0x47e8, 32);
+        	if (button_count[12] == 1) {
+        		statusOfLight = PHASE1_GREEN;
+        		timeOfGreenPhase1 = countLight;
+                timeOfLight = timeOfGreenPhase1;
+                countLight = 0;
+                swap = 0;
+        	}
+        	if (button_count[13] == 1) {
+        		countLight = (countLight + 1)%20;
+        	}
+        	break;
+        case MODIFY_YELLOW2:
+        	if (cntOfLight == 0) {
+        		swap = (swap + 1) % 2;
+            	if (swap == 0) lightYellow();
+            	else lightOff();
+        	}
+    		lcd_show_int_num(75, 50, countLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(90, 50, countLight % 10, 1, RED, 0x47e8, 32);
+        	if (button_count[12] == 1) {
+                statusOfLight = PHASE2_YELLOW;
+                timeOfYellowPhase2 = countLight;
+                timeOfLight = timeOfYellowPhase2;
+                countLight = 0;
+                swap = 0;
+        	}
+        	if (button_count[13] == 1) {
+        		countLight = (countLight + 1)%20;
+        	}
+        	break;
+        case MODIFY_GREEN2:
+        	if (cntOfLight == 0) {
+        		swap = (swap + 1) % 2;
+            	if (swap == 0) lightGreen();
+            	else lightOff();
+        	}
+    		lcd_show_int_num(75, 50, countLight / 10, 1, RED, 0x47e8, 32);
+    		lcd_show_int_num(90, 50, countLight % 10, 1, RED, 0x47e8, 32);
+        	if (button_count[12] == 1) {
+                statusOfLight = PHASE2_GREEN;
+                timeOfGreenPhase2 = countLight;
+                timeOfLight = timeOfGreenPhase2;
+                countLight = 0;
+                swap = 0;
+        	}
+        	if (button_count[13] == 1) {
+        		countLight = (countLight + 1)%20;
+        	}
+        	break;
+
         default:
             statusOfLight = PHASE1_GREEN;
             break;

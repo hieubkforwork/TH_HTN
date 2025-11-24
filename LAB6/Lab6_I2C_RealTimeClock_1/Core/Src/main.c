@@ -47,6 +47,17 @@
 #define SET_DATE        4
 #define SET_MONTH       5
 #define SET_YEAR        6
+#define SET_SECOND      7
+#define WATCHING        8
+
+#define SCHEDULE_HOUR       10
+#define SCHEDULE_MINUTE     11
+#define SCHEDULE_DAY        12
+#define SCHEDULE_DATE       13
+#define SCHEDULE_MONTH      14
+#define SCHEDULE_YEAR       15
+#define SCHEDULE_SECOND     16
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -59,6 +70,24 @@
 /* USER CODE BEGIN PV */
 int statusSetupTime = INIT_SYSTEM;
 int timeBlink = 0;
+// SETTING MODE
+int sec_tmp = 0;
+int hour_tmp = 0;
+int minute_tmp = 0;
+int date_tmp = 0;
+int day_tmp = 0;
+int month_tmp = 0;
+int year_tmp = 0;
+// SCHEDULING MODE
+int sec_timer = 0;
+int hour_timer = 0;
+int min_timer = 0;
+int date_timer = 0;
+int day_timer = 0;
+int month_timer = 0;
+int year_timer = 0;
+
+int isSchedule = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,16 +96,29 @@ void SystemClock_Config(void);
 void system_init();
 void DisplayTime();
 void UpdateTime();
-unsigned char IsButtonMode();
+void SetUpTime();
+unsigned char IsButtonSettingMode();
+unsigned char IsButtonSet();
+unsigned char IsButtonScheduleMode();
 unsigned char IsButtonUp();
 unsigned char IsButtonDown();
+// SETTING
 void SetHour();
 void SetMinute();
+void SetSecond();
 void SetDay();
 void SetDate();
 void SetMonth();
 void SetYear();
-void SetUpTime();
+// SCHEDULING
+void scheduleHour();
+void scheduleMinute();
+void scheduleSecond();
+void scheduleDay();
+void scheduleDate();
+void scheduleMonth();
+void scheduleYear();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,12 +168,9 @@ int main(void) {
 	UpdateTime();
 
 	while (1) {
-		while (!timer2_flag)
-			;
+		while (!timer2_flag);
 		timer2_flag = 0;
-
-		ds3231_read_time();
-
+        button_scan();
 		DisplayTime();
 		SetUpTime();
     /* USER CODE END WHILE */
@@ -207,24 +246,19 @@ void UpdateTime() {
 	ds3231_write(ADDRESS_SEC, 23);
 }
 
-void DisplayTime()
-{
-	if(statusSetupTime == INIT_SYSTEM) ds3231_read_time();
-	if(statusSetupTime != SET_HOUR || (statusSetupTime == SET_HOUR && timeBlink >= 5)){
-		lcd_show_int_num(70, 100, ds3231_hours/10, 1, GREEN, BLACK, 24);
-		lcd_show_int_num(83, 100, ds3231_hours%10, 1, GREEN, BLACK, 24);
-	}
+void DisplayTime() {
+	if (statusSetupTime == INIT_SYSTEM || statusSetupTime == WATCHING) ds3231_read_time();
 
-	lcd_show_char(96, 100, ':', GREEN, BLACK, 24, 0);
-	lcd_show_int_num(110, 100, ds3231_min/10, 1, GREEN, BLACK, 24);
-	lcd_show_int_num(123, 100, ds3231_min%10, 1, GREEN, BLACK, 24);
-	lcd_show_char(136, 100, ':', GREEN, BLACK, 24, 0);
-	lcd_show_int_num(150, 100, ds3231_sec/10, 1, GREEN, BLACK, 24);
-	lcd_show_int_num(163, 100, ds3231_sec%10, 1, GREEN, BLACK, 24);
+	lcd_show_int_num(70, 100, ds3231_hours/10, 1, GREEN, BLACK, 24);
+	lcd_show_int_num(83, 100, ds3231_hours%10, 1, GREEN, BLACK, 24);
+    lcd_show_char(96, 100, ':', GREEN, BLACK, 24, 0);
+    lcd_show_int_num(110, 100, ds3231_min/10, 1, GREEN, BLACK, 24);
+    lcd_show_int_num(123, 100, ds3231_min%10, 1, GREEN, BLACK, 24);
+    lcd_show_char(136, 100, ':', GREEN, BLACK, 24, 0);
+    lcd_show_int_num(150, 100, ds3231_sec/10, 1, GREEN, BLACK, 24);
+    lcd_show_int_num(163, 100, ds3231_sec%10, 1, GREEN, BLACK, 24);
 
-    //////day
-    switch(ds3231_day)
-    {
+    switch(ds3231_day) {
         case 1:
         	lcd_show_string(20, 130, "SUN", YELLOW, BLACK, 24, 0);
             break;
@@ -248,9 +282,7 @@ void DisplayTime()
             break;
     }
 
-
-    switch(ds3231_month)
-    {
+    switch(ds3231_month) {
         case 1:
         	lcd_show_string(105, 130, "JAN", YELLOW, BLACK, 24, 0);
             break;
@@ -288,120 +320,463 @@ void DisplayTime()
         	lcd_show_string(105, 130, "DEC", YELLOW, BLACK, 24, 0);
             break;
     }
-
     lcd_show_int_num(70, 130, ds3231_date, 2, YELLOW, BLACK, 24);
-
 	lcd_show_int_num(150, 130, 20, 2, YELLOW, BLACK, 24);
 	lcd_show_int_num(176, 130, ds3231_year, 2, YELLOW, BLACK, 24);
-
 }
 
-void SetUpTime()
-{
-    switch(statusSetupTime)
-    {
+void SetUpTime() {
+    switch(statusSetupTime) {
         case INIT_SYSTEM:
-            if(IsButtonMode())
+            statusSetupTime = WATCHING;
+            break;
+        case WATCHING:
+        	lcd_show_string_center(0, 0, "   MODE1: WATCHING CLOCK   ", WHITE, BLUE, 16, 0);
+            if(IsButtonSettingMode()) {
                 statusSetupTime = SET_HOUR;
+                hour_tmp  = ds3231_hours;
+                minute_tmp = ds3231_min;
+                sec_tmp = ds3231_sec;
+                date_tmp = ds3231_date;
+                month_tmp = ds3231_month;
+                year_tmp = ds3231_year;
+                day_tmp = ds3231_day;
+            }
+            if (IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_HOUR;
+
+                hour_tmp  = ds3231_hours;
+                minute_tmp = ds3231_min;
+                sec_tmp = ds3231_sec;
+                date_tmp = ds3231_date;
+                month_tmp = ds3231_month;
+                year_tmp = ds3231_year;
+                day_tmp = ds3231_day;
+
+                sec_timer = ds3231_sec;
+                hour_timer = ds3231_hours;
+                min_timer = ds3231_min;
+                date_timer = ds3231_date;
+                day_timer = ds3231_day;
+                month_timer = ds3231_month;
+                year_timer = ds3231_year;
+            }
+            if (isSchedule && ds3231_sec == sec_timer && ds3231_hours == hour_timer && ds3231_min == min_timer &&
+                ds3231_date == date_timer && ds3231_day == day_timer && ds3231_month == month_timer &&
+                ds3231_year == year_timer) lcd_show_string_center(0, 200, "TIME UP!", RED, WHITE, 24, 0);
+            if (isSchedule && ds3231_sec == (sec_timer + 5) && ds3231_hours == hour_timer && ds3231_min == min_timer &&
+                ds3231_date == date_timer && ds3231_day == day_timer && ds3231_month == month_timer &&
+                ds3231_year == year_timer) {
+                    lcd_clear(BLACK);
+                    isSchedule = 0;
+                }
+
             break;
         case SET_HOUR:
+        	lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetHour();
-            if(IsButtonMode())
+            if (IsButtonSettingMode()) {
                 statusSetupTime = SET_MINUTE;
+                ds3231_hours = hour_tmp;
+                ds3231_write(ADDRESS_HOUR, ds3231_hours);
+            }
+            if (IsButtonSet()) hour_tmp = ds3231_hours;
             break;
         case SET_MINUTE:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetMinute();
-            if(IsButtonMode())
+            if(IsButtonSettingMode()) {
+                statusSetupTime = SET_SECOND;
+                ds3231_min = minute_tmp;
+                ds3231_write(ADDRESS_MIN, ds3231_min);
+            }
+            if (IsButtonSet()) minute_tmp = ds3231_min;
+            break;
+        case SET_SECOND:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
+            SetSecond();
+            if(IsButtonSettingMode()) {
                 statusSetupTime = SET_DAY;
+                ds3231_sec = sec_tmp;
+                ds3231_write(ADDRESS_SEC, ds3231_sec);
+            }
+            if (IsButtonSet()) sec_tmp = ds3231_sec;
             break;
         case SET_DAY:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetDay();
-            if(IsButtonMode())
+            if(IsButtonSettingMode()) {
                 statusSetupTime = SET_DATE;
+                ds3231_day = day_tmp;
+                ds3231_write(ADDRESS_DAY, ds3231_day);
+            }
+            if (IsButtonSet()) day_tmp = ds3231_day;
             break;
         case SET_DATE:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetDate();
-            if(IsButtonMode())
+            if(IsButtonSettingMode()) {
                 statusSetupTime = SET_MONTH;
+                ds3231_date = date_tmp;
+                ds3231_write(ADDRESS_DATE, ds3231_date);
+            }
+            if (IsButtonSet()) date_tmp = ds3231_date;
             break;
         case SET_MONTH:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetMonth();
-            if(IsButtonMode())
+            if(IsButtonSettingMode()) {
                 statusSetupTime = SET_YEAR;
+                ds3231_month = month_tmp;
+                ds3231_write(ADDRESS_MONTH, ds3231_month);
+                ds3231_date = date_tmp;
+                ds3231_write(ADDRESS_DATE, ds3231_date);
+            }
+            if (IsButtonSet()) {
+                month_tmp = ds3231_month;
+                date_tmp = ds3231_date;
+            }
             break;
         case SET_YEAR:
+            lcd_show_string_center(0, 0, "   MODE2: SETTING CLOCK   ", WHITE, BLUE, 16, 0);
             SetYear();
-            if(IsButtonMode())
-                statusSetupTime = INIT_SYSTEM;
+            if(IsButtonSettingMode()) {
+                statusSetupTime = WATCHING;
+                ds3231_year = year_tmp;
+                ds3231_write(ADDRESS_YEAR, ds3231_year);
+                ds3231_month = month_tmp;
+                ds3231_write(ADDRESS_MONTH, ds3231_month);
+                ds3231_date = date_tmp;
+                ds3231_write(ADDRESS_DATE, ds3231_date);
+                ds3231_hours = hour_tmp;
+                ds3231_write(ADDRESS_HOUR, ds3231_hours);
+                ds3231_min = minute_tmp;
+                ds3231_write(ADDRESS_MIN, ds3231_min);
+                ds3231_sec = sec_tmp;
+                ds3231_write(ADDRESS_SEC, ds3231_sec);
+            }
+            if (IsButtonSet()) {
+                year_tmp = ds3231_year;
+                date_tmp = ds3231_date;
+            }
             break;
+        case SCHEDULE_HOUR:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleHour();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_MINUTE;
+            }
+            if (IsButtonSet()) hour_timer = ds3231_hours;
+            break;
+
+        case SCHEDULE_MINUTE:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleMinute();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_SECOND;
+            }
+            if (IsButtonSet()) min_timer = ds3231_min;
+            break;
+
+        case SCHEDULE_SECOND:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleSecond();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_DAY;
+            }
+            if (IsButtonSet()) sec_timer = ds3231_sec;
+            break;
+
+        case SCHEDULE_DAY:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleDay();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_DATE;
+            }
+            if (IsButtonSet()) day_timer = ds3231_day;
+            break;
+
+        case SCHEDULE_DATE:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleDate();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_MONTH;
+            }
+            if (IsButtonSet()) date_timer = ds3231_date;
+            break;
+
+        case SCHEDULE_MONTH:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleMonth();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = SCHEDULE_YEAR;
+            }
+
+            break;
+
+        case SCHEDULE_YEAR:
+            lcd_show_string_center(0, 0, "    MODE3: SCHEDULER   ", WHITE, BLUE, 16, 0);
+            scheduleYear();
+            if(IsButtonScheduleMode()) {
+                statusSetupTime = WATCHING;
+                ds3231_year = year_tmp;
+                ds3231_write(ADDRESS_YEAR, ds3231_year);
+                ds3231_month = month_tmp;
+                ds3231_write(ADDRESS_MONTH, ds3231_month);
+                ds3231_date = date_tmp;
+                ds3231_write(ADDRESS_DATE, ds3231_date);
+                ds3231_hours = hour_tmp;
+                ds3231_write(ADDRESS_HOUR, ds3231_hours);
+                ds3231_min = minute_tmp;
+                ds3231_write(ADDRESS_MIN, ds3231_min);
+                ds3231_sec = sec_tmp;
+                ds3231_write(ADDRESS_SEC, ds3231_sec);
+                isSchedule = 1;
+            }
+
+            break;
+
         default:
             statusSetupTime = INIT_SYSTEM;
             break;
-
-
     }
 }
-//
-unsigned char IsButtonMode()
-{
-    if (button_count[4] == 1)
-        return 1;
-    else
-        return 0;
+
+unsigned char IsButtonSettingMode() {
+    if (button_count[12] == 1) return 1; // BTN_E
+    else return 0;
+}
+unsigned char IsButtonSet() {
+    if (button_count[14] == 1) return 1; // BTN_B
+    else return 0;
+}
+unsigned char IsButtonScheduleMode() {
+    if (button_count[13] == 1) return 1; // BTN_0
+    else return 0;
+}
+unsigned char IsButtonUp() {
+    if ((button_count[3] == 1) || (button_count[3] >= 10 && button_count[3]%4 == 0)) return 1;
+    else return 0;
+}
+unsigned char IsButtonDown() {
+    if ((button_count[7] == 1) || (button_count[7] >= 10 && button_count[7]%4 == 0)) return 1;
+    else return 0;
 }
 
-unsigned char IsButtonUp()
-{
-    if ((button_count[5] == 1) || (button_count[5] >= 10 && button_count[5]%4 == 0))
-        return 1;
-    else
-        return 0;
-}
-
-unsigned char IsButtonDown()
-{
-    if ((button_count[9] == 1) || (button_count[9] >= 10 && button_count[9]%4 == 0))
-        return 1;
-    else
-        return 0;
-}
-
-void SetHour()
-{
-    timeBlink = (timeBlink + 1)%20;
-    if(timeBlink < 5)
-    	lcd_show_string(70, 100, "  ", GREEN, BLACK, 24, 0);
-    if(IsButtonUp())
-    {
+void SetHour() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(70, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
         ds3231_hours++;
-        if(ds3231_hours > 23)
-            ds3231_hours = 0;
-        ds3231_write(ADDRESS_HOUR, ds3231_hours);
+        if(ds3231_hours > 23) ds3231_hours = 0;
     }
-    if(IsButtonDown())
-    {
+    if(IsButtonDown()) {
         ds3231_hours--;
-        if(ds3231_hours < 0)
-            ds3231_hours = 23;
-        ds3231_write(ADDRESS_HOUR, ds3231_hours);
+        if(ds3231_hours == 255) ds3231_hours = 23;
     }
+    ds3231_write(ADDRESS_HOUR, ds3231_hours);
 }
-void SetMinute()
-{
 
+void SetMinute() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(110, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_min++;
+        if(ds3231_min > 59) ds3231_min = 0;
+    }
+    if(IsButtonDown()) {
+        ds3231_min--;
+        if(ds3231_min == 255) ds3231_min = 59;
+    }
+    ds3231_write(ADDRESS_MIN, ds3231_min);
 }
-void SetDay()
-{
+
+void SetSecond() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(150, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_sec++;
+        if(ds3231_sec > 59) ds3231_sec = 0;
+    }
+    if(IsButtonDown()) {
+        ds3231_sec--;
+        if(ds3231_sec == 255) ds3231_sec = 59;
+    }
+    ds3231_write(ADDRESS_SEC, ds3231_sec);
 }
-void SetDate()
-{
+
+void SetDay(){
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(20, 130, "   ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_day++;
+        if(ds3231_day > 7) ds3231_day = 1;
+    }
+    if(IsButtonDown()) {
+        ds3231_day--;
+        if(ds3231_day < 1) ds3231_day = 7;
+    }
+    ds3231_write(ADDRESS_DAY, ds3231_day);
 }
-void SetMonth()
-{
+
+// Help functions
+unsigned char IsLeapYear(int y) {
+    if((y % 400 == 0) || (y % 4 == 0 && y % 100 != 0)) return 1;
+    return 0;
 }
-void SetYear()
-{
+unsigned char GetMaxDay(unsigned char month, unsigned char year) {
+    switch(month) {
+        case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+            return 31;
+        case 4: case 6: case 9: case 11:
+            return 30;
+        case 2:
+            if(IsLeapYear(year)) return 29;
+            else return 28;
+    }
+    return 31;
 }
+void SetDate() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(70, 130, "  ", YELLOW, BLACK, 24, 0);
+
+    if(IsButtonUp()) {
+        ds3231_date++;
+        // Decide correct date-limit for each month/year (leap-year or not)
+        unsigned char maxDay = GetMaxDay(month_tmp, year_tmp);
+        if(ds3231_date > maxDay) ds3231_date = 1;
+    }
+    if(IsButtonDown()) {
+        ds3231_date--;
+        // Decide correct date-limit for each month/year (leap-year or not)
+        unsigned char maxDay = GetMaxDay(month_tmp, year_tmp);
+        if(ds3231_date < 1) ds3231_date = maxDay;
+    }
+    ds3231_write(ADDRESS_DATE, ds3231_date);
+}
+
+void SetMonth() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(105, 130, "   ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_month++;
+        if(ds3231_month > 12) ds3231_month = 1;
+        // Limit date correspond with month
+        unsigned char maxDay = GetMaxDay(ds3231_month, year_tmp);
+        if(ds3231_date > maxDay) {
+            ds3231_date = maxDay;
+            ds3231_write(ADDRESS_DATE, ds3231_date);
+        }
+    }
+    if(IsButtonDown()) {
+        ds3231_month--;
+        if(ds3231_month < 1) ds3231_month = 12;
+        // Limit date correspond with month
+        unsigned char maxDay = GetMaxDay(ds3231_month, year_tmp);
+        if(ds3231_date > maxDay) {
+            ds3231_date = maxDay;
+            ds3231_write(ADDRESS_DATE, ds3231_date);
+        }
+    }
+    ds3231_write(ADDRESS_MONTH, ds3231_month);
+}
+
+void SetYear() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(176, 130, "  ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_year++;
+        // Limit date correspond with year
+        unsigned char maxDay = GetMaxDay(month_tmp, ds3231_year);
+        if(ds3231_date > maxDay) {
+            ds3231_date = maxDay;
+            ds3231_write(ADDRESS_DATE, ds3231_date);
+        }
+    }
+    if(IsButtonDown()) {
+        ds3231_year--;
+        // Limit date correspond with year
+        unsigned char maxDay = GetMaxDay(month_tmp, ds3231_year);
+        if(ds3231_date > maxDay) {
+            ds3231_date = maxDay;
+            ds3231_write(ADDRESS_DATE, ds3231_date);
+        }
+    }
+    ds3231_write(ADDRESS_YEAR, ds3231_year);
+}
+
+void scheduleHour() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(70, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_hours++;
+        if(ds3231_hours > 23) ds3231_hours = hour_tmp;
+    }
+    hour_timer = ds3231_hours;
+}
+void scheduleMinute() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(110, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_min++;
+        if(ds3231_min > 59) ds3231_min = minute_tmp;
+    }
+    min_timer = ds3231_min;
+}
+void scheduleSecond() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(150, 100, "  ", GREEN, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_sec++;
+        if(ds3231_sec > 59) ds3231_sec = sec_tmp;
+    }
+    sec_timer = ds3231_sec;
+}
+void scheduleDay() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(20, 130, "   ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_day++;
+        if(ds3231_day > 7) ds3231_day = day_tmp;
+    }
+    day_timer = ds3231_day;
+}
+void scheduleDate() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(70, 130, "  ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_date++;
+        unsigned char maxDay = GetMaxDay(month_tmp, year_tmp);
+        if(ds3231_date > maxDay) ds3231_date = date_tmp;
+    }
+    date_timer = ds3231_date;
+}
+
+void scheduleMonth() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(105, 130, "   ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_month++;
+        if(ds3231_month > 12) ds3231_month = month_tmp;
+        unsigned char maxDay = GetMaxDay(ds3231_month, year_tmp);
+        if(ds3231_date > maxDay) ds3231_date = maxDay;
+    }
+    month_timer = ds3231_month;
+}
+
+void scheduleYear() {
+    timeBlink = (timeBlink + 1) % 20;
+    if(timeBlink < 5) lcd_show_string(176, 130, "  ", YELLOW, BLACK, 24, 0);
+    if(IsButtonUp()) {
+        ds3231_year++;
+        unsigned char maxDay = GetMaxDay(month_timer, ds3231_year);
+        if(ds3231_date > maxDay) ds3231_date = maxDay;
+    }
+    year_timer = ds3231_year;
+}
+
+
+
 /* USER CODE END 4 */
 
 /**
